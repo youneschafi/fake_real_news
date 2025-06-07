@@ -2,11 +2,13 @@ import streamlit as st
 import math
 import os
 from transformers import pipeline, RobertaTokenizerFast, RobertaForSequenceClassification
+import streamlit as st
+import os
+from transformers import pipeline, AutoTokenizer, AutoModelForSequenceClassification
 
-model_path = os.path.abspath("fake-vs-real-final")
-model = RobertaForSequenceClassification.from_pretrained(model_path)
-tokenizer = RobertaTokenizerFast.from_pretrained(model_path)
-
+MODEL_ID = "Chafiyounes/fakenews"
+model = AutoModelForSequenceClassification.from_pretrained(MODEL_ID)
+tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
 classifier = pipeline(
     "text-classification",
     model=model,
