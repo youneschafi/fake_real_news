@@ -1,12 +1,9 @@
 import streamlit as st
 import math
-import os
-from transformers import pipeline, RobertaTokenizerFast, RobertaForSequenceClassification
-import streamlit as st
-import os
+import pandas as pd
 from transformers import pipeline, AutoTokenizer, AutoModelForSequenceClassification
 
-MODEL_ID = "Chafiyounes/fakenews"
+MODEL_ID = "Chafiyounes/fakenews"  # Your uploaded HF model repo
 model = AutoModelForSequenceClassification.from_pretrained(MODEL_ID)
 tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
 classifier = pipeline(
@@ -17,16 +14,17 @@ classifier = pipeline(
 )
 
 st.set_page_config(page_title="Fake vs Real News Classifier", page_icon="📰", layout="wide")
-
 st.title("📰 Fake vs Real News Detector")
+
 st.write(
     """
+    📝 **Single Article Classification**  
     Paste a news article (or headline + body) below and click “Classify.”  
-    The model will split into 512-token chunks, classify each, and then output
-    whether it’s “fake” or “real” with a confidence score.
+    The model splits text into 512-token chunks and gives an overall verdict.
     """
 )
 
+# === Single Text Classification ===
 article_text = st.text_area(
     "Paste your article here:",
     height=300,
@@ -67,3 +65,40 @@ if st.button("Classify"):
         st.write("**Chunk-wise predictions:**")
         for idx, r in enumerate(results):
             st.write(f"Chunk {idx+1}: FAKE: {r[0]['score']:.2%}, REAL: {r[1]['score']:.2%}")
+
+
+st.write("---")
+st.write("📂 **Batch Source Credibility Check**")
+
+csv_file = st.file_uploader("Upload a CSV file with a 'text' or 'content' column", type=["csv"])
+
+if csv_file is not None:
+    try:
+        df = pd.read_csv(csv_file)
+        column_name = "text" if "text" in df.columns else "content" if "content" in df.columns else None
+
+        if not column_name:
+            st.error("CSV must contain a 'text' or 'content' column.")
+        else:
+            with st.spinner("Processing articles..."):
+                texts = df[column_name].astype(str).tolist()
+                fake_count = 0
+
+                for text in texts:
+                    output = classifier(text[:512])[0]  # Take first chunk only for speed
+                    pred_label = max(output, key=lambda x: x['score'])['label']
+                    if pred_label.lower() == "fake":
+                        fake_count += 1
+
+                fake_ratio = fake_count / len(texts)
+                credibility = "❌ Non-credible Source" if fake_ratio > 0.4 else "✅ Credible Source"
+
+                st.write("### 🔎 Batch Analysis Result:")
+                st.markdown(f"""
+                - Total Articles: **{len(texts)}**  
+                - Fake Articles: **{fake_count}**  
+                - Fake Percentage: **{fake_ratio * 100:.2f}%**  
+                - **Conclusion:** {credibility}
+                """)
+    except Exception as e:
+        st.error(f"Error processing CSV: {e}")

@@ -1,5 +1,11 @@
 .venv
-fake-vs-real-final
-roberta-fake-vs-real-final
-fake-vs-real-final
-roberta-fake-vs-real-final
+transformer/
+transformer_model/
+figures/
+logreg_model.joblib
+tfidf_vectorizer.joblib
+metrics.json
+*.ipynb_checkpoints/
+__pycache__/
+*.pyc
+WELFake_Dataset.csv
